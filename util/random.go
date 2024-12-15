@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const alphabet = "abcdefghijklmnopqrstuvwxyz"
@@ -35,7 +37,22 @@ func RandomOwner() string {
 	return RandomString(6)
 }
 
-// RandomClass generates a random owner name
+// RandomClass generates a random Class name
 func RandomClass() string {
 	return RandomString(10)
+}
+
+// RandomId generates a random ID
+func RandomId() int64 {
+	return RandomInt(10, 100)
+}
+
+// RandomHeader generates a random header
+func RandomHeader() pgtype.Text {
+	return pgtype.Text{String: RandomString(10), Valid: true}
+}
+
+// RandomParagraph generates a random paragraph
+func RandomParagraph() pgtype.Text {
+	return pgtype.Text{String: RandomString(150), Valid: true}
 }

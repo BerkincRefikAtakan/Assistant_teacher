@@ -42,14 +42,19 @@ func (q *Queries) DeleteClass(ctx context.Context, id int64) error {
 	return err
 }
 
-const getClassByID = `-- name: GetClassByID :one
+const getClasses = `-- name: GetClasses :one
 SELECT id, teacher_id, class_name, created_at
 FROM classes
-WHERE id = $1
+WHERE class_name = $1 AND teacher_id = $2
 `
 
-func (q *Queries) GetClassByID(ctx context.Context, id int64) (Class, error) {
-	row := q.db.QueryRow(ctx, getClassByID, id)
+type GetClassesParams struct {
+	ClassName string `json:"class_name"`
+	TeacherID int64  `json:"teacher_id"`
+}
+
+func (q *Queries) GetClasses(ctx context.Context, arg GetClassesParams) (Class, error) {
+	row := q.db.QueryRow(ctx, getClasses, arg.ClassName, arg.TeacherID)
 	var i Class
 	err := row.Scan(
 		&i.ID,
@@ -60,82 +65,20 @@ func (q *Queries) GetClassByID(ctx context.Context, id int64) (Class, error) {
 	return i, err
 }
 
-const getClasses = `-- name: GetClasses :many
-SELECT id, teacher_id, class_name, created_at
-FROM classes
-`
-
-func (q *Queries) GetClasses(ctx context.Context) ([]Class, error) {
-	rows, err := q.db.Query(ctx, getClasses)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Class{}
-	for rows.Next() {
-		var i Class
-		if err := rows.Scan(
-			&i.ID,
-			&i.TeacherID,
-			&i.ClassName,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
-const getClassesByTeacher = `-- name: GetClassesByTeacher :many
-SELECT id, teacher_id, class_name, created_at
-FROM classes
-WHERE teacher_id = $1
-`
-
-func (q *Queries) GetClassesByTeacher(ctx context.Context, teacherID int64) ([]Class, error) {
-	rows, err := q.db.Query(ctx, getClassesByTeacher, teacherID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Class{}
-	for rows.Next() {
-		var i Class
-		if err := rows.Scan(
-			&i.ID,
-			&i.TeacherID,
-			&i.ClassName,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const updateClass = `-- name: UpdateClass :one
 UPDATE classes
-SET teacher_id = $1, class_name = $2
-WHERE id = $3
+SET teacher_id = $1
+WHERE id = $2
 RETURNING id, teacher_id, class_name, created_at
 `
 
 type UpdateClassParams struct {
-	TeacherID int64  `json:"teacher_id"`
-	ClassName string `json:"class_name"`
-	ID        int64  `json:"id"`
+	TeacherID int64 `json:"teacher_id"`
+	ID        int64 `json:"id"`
 }
 
 func (q *Queries) UpdateClass(ctx context.Context, arg UpdateClassParams) (Class, error) {
-	row := q.db.QueryRow(ctx, updateClass, arg.TeacherID, arg.ClassName, arg.ID)
+	row := q.db.QueryRow(ctx, updateClass, arg.TeacherID, arg.ID)
 	var i Class
 	err := row.Scan(
 		&i.ID,

@@ -1,11 +1,7 @@
--- name: GetTeachers :many
-SELECT id, name, surname, created_at
-FROM teachers;
-
--- name: GetTeacherByID :one
+-- name: GetTeacherByNameAndSurname :one
 SELECT id, name, surname, created_at
 FROM teachers
-WHERE id = $1;
+WHERE name = $1 AND surname = $2;
 
 -- name: CreateTeacher :one
 INSERT INTO teachers (name, surname)

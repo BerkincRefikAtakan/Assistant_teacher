@@ -1,16 +1,7 @@
--- name: GetClasses :many
-SELECT id, teacher_id, class_name, created_at
-FROM classes;
-
--- name: GetClassByID :one
+-- name: GetClasses :one
 SELECT id, teacher_id, class_name, created_at
 FROM classes
-WHERE id = $1;
-
--- name: GetClassesByTeacher :many
-SELECT id, teacher_id, class_name, created_at
-FROM classes
-WHERE teacher_id = $1;
+WHERE class_name = $1 AND teacher_id = $2;
 
 -- name: CreateClass :one
 INSERT INTO classes (teacher_id, class_name)
@@ -19,8 +10,8 @@ RETURNING id, teacher_id, class_name, created_at;
 
 -- name: UpdateClass :one
 UPDATE classes
-SET teacher_id = $1, class_name = $2
-WHERE id = $3
+SET teacher_id = $1
+WHERE id = $2
 RETURNING id, teacher_id, class_name, created_at;
 
 -- name: DeleteClass :exec

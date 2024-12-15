@@ -42,14 +42,19 @@ func (q *Queries) DeleteTeacher(ctx context.Context, id int64) error {
 	return err
 }
 
-const getTeacherByID = `-- name: GetTeacherByID :one
+const getTeacherByNameAndSurname = `-- name: GetTeacherByNameAndSurname :one
 SELECT id, name, surname, created_at
 FROM teachers
-WHERE id = $1
+WHERE name = $1 AND surname = $2
 `
 
-func (q *Queries) GetTeacherByID(ctx context.Context, id int64) (Teacher, error) {
-	row := q.db.QueryRow(ctx, getTeacherByID, id)
+type GetTeacherByNameAndSurnameParams struct {
+	Name    string `json:"name"`
+	Surname string `json:"surname"`
+}
+
+func (q *Queries) GetTeacherByNameAndSurname(ctx context.Context, arg GetTeacherByNameAndSurnameParams) (Teacher, error) {
+	row := q.db.QueryRow(ctx, getTeacherByNameAndSurname, arg.Name, arg.Surname)
 	var i Teacher
 	err := row.Scan(
 		&i.ID,
@@ -58,36 +63,6 @@ func (q *Queries) GetTeacherByID(ctx context.Context, id int64) (Teacher, error)
 		&i.CreatedAt,
 	)
 	return i, err
-}
-
-const getTeachers = `-- name: GetTeachers :many
-SELECT id, name, surname, created_at
-FROM teachers
-`
-
-func (q *Queries) GetTeachers(ctx context.Context) ([]Teacher, error) {
-	rows, err := q.db.Query(ctx, getTeachers)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Teacher{}
-	for rows.Next() {
-		var i Teacher
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Surname,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
 }
 
 const updateTeacher = `-- name: UpdateTeacher :one

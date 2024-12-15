@@ -1,28 +1,25 @@
--- name: GetParagraphs :many
-SELECT id, teacher_id, header, paragraph, created_at
-FROM paragraphs;
-
--- name: GetParagraphByID :one
+-- name: GetParagraphs :one
 SELECT id, teacher_id, header, paragraph, created_at
 FROM paragraphs
-WHERE id = $1;
+WHERE teacher_id = $1 AND header=$2;
 
 -- name: GetParagraphsByTeacher :many
 SELECT id, teacher_id, header, paragraph, created_at
 FROM paragraphs
-WHERE teacher_id = $1;
+WHERE teacher_id = $1
+LIMIT $2 OFFSET $3;
 
 -- name: CreateParagraph :one
 INSERT INTO paragraphs (teacher_id, header, paragraph)
 VALUES ($1, $2, $3)
 RETURNING id, teacher_id, header, paragraph, created_at;
 
--- name: UpdateParagraph :one
+-- name: UpdateParagraphOrAndHeader :one
 UPDATE paragraphs
-SET teacher_id = $1, header = $2, paragraph = $3
-WHERE id = $4
+SET  header = $1, paragraph = $2
+WHERE id = $3
 RETURNING id, teacher_id, header, paragraph, created_at;
 
 -- name: DeleteParagraph :exec
 DELETE FROM paragraphs
-WHERE id = $1;
+WHERE teacher_id = $1 AND header=$2;

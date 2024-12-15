@@ -38,22 +38,32 @@ func (q *Queries) CreateParagraph(ctx context.Context, arg CreateParagraphParams
 
 const deleteParagraph = `-- name: DeleteParagraph :exec
 DELETE FROM paragraphs
-WHERE id = $1
+WHERE teacher_id = $1 AND header=$2
 `
 
-func (q *Queries) DeleteParagraph(ctx context.Context, id int64) error {
-	_, err := q.db.Exec(ctx, deleteParagraph, id)
+type DeleteParagraphParams struct {
+	TeacherID int64       `json:"teacher_id"`
+	Header    pgtype.Text `json:"header"`
+}
+
+func (q *Queries) DeleteParagraph(ctx context.Context, arg DeleteParagraphParams) error {
+	_, err := q.db.Exec(ctx, deleteParagraph, arg.TeacherID, arg.Header)
 	return err
 }
 
-const getParagraphByID = `-- name: GetParagraphByID :one
+const getParagraphs = `-- name: GetParagraphs :one
 SELECT id, teacher_id, header, paragraph, created_at
 FROM paragraphs
-WHERE id = $1
+WHERE teacher_id = $1 AND header=$2
 `
 
-func (q *Queries) GetParagraphByID(ctx context.Context, id int64) (Paragraph, error) {
-	row := q.db.QueryRow(ctx, getParagraphByID, id)
+type GetParagraphsParams struct {
+	TeacherID int64       `json:"teacher_id"`
+	Header    pgtype.Text `json:"header"`
+}
+
+func (q *Queries) GetParagraphs(ctx context.Context, arg GetParagraphsParams) (Paragraph, error) {
+	row := q.db.QueryRow(ctx, getParagraphs, arg.TeacherID, arg.Header)
 	var i Paragraph
 	err := row.Scan(
 		&i.ID,
@@ -65,45 +75,21 @@ func (q *Queries) GetParagraphByID(ctx context.Context, id int64) (Paragraph, er
 	return i, err
 }
 
-const getParagraphs = `-- name: GetParagraphs :many
-SELECT id, teacher_id, header, paragraph, created_at
-FROM paragraphs
-`
-
-func (q *Queries) GetParagraphs(ctx context.Context) ([]Paragraph, error) {
-	rows, err := q.db.Query(ctx, getParagraphs)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Paragraph{}
-	for rows.Next() {
-		var i Paragraph
-		if err := rows.Scan(
-			&i.ID,
-			&i.TeacherID,
-			&i.Header,
-			&i.Paragraph,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getParagraphsByTeacher = `-- name: GetParagraphsByTeacher :many
 SELECT id, teacher_id, header, paragraph, created_at
 FROM paragraphs
 WHERE teacher_id = $1
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetParagraphsByTeacher(ctx context.Context, teacherID int64) ([]Paragraph, error) {
-	rows, err := q.db.Query(ctx, getParagraphsByTeacher, teacherID)
+type GetParagraphsByTeacherParams struct {
+	TeacherID int64 `json:"teacher_id"`
+	Limit     int32 `json:"limit"`
+	Offset    int32 `json:"offset"`
+}
+
+func (q *Queries) GetParagraphsByTeacher(ctx context.Context, arg GetParagraphsByTeacherParams) ([]Paragraph, error) {
+	rows, err := q.db.Query(ctx, getParagraphsByTeacher, arg.TeacherID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
@@ -128,27 +114,21 @@ func (q *Queries) GetParagraphsByTeacher(ctx context.Context, teacherID int64) (
 	return items, nil
 }
 
-const updateParagraph = `-- name: UpdateParagraph :one
+const updateParagraphOrAndHeader = `-- name: UpdateParagraphOrAndHeader :one
 UPDATE paragraphs
-SET teacher_id = $1, header = $2, paragraph = $3
-WHERE id = $4
+SET  header = $1, paragraph = $2
+WHERE id = $3
 RETURNING id, teacher_id, header, paragraph, created_at
 `
 
-type UpdateParagraphParams struct {
-	TeacherID int64       `json:"teacher_id"`
+type UpdateParagraphOrAndHeaderParams struct {
 	Header    pgtype.Text `json:"header"`
 	Paragraph pgtype.Text `json:"paragraph"`
 	ID        int64       `json:"id"`
 }
 
-func (q *Queries) UpdateParagraph(ctx context.Context, arg UpdateParagraphParams) (Paragraph, error) {
-	row := q.db.QueryRow(ctx, updateParagraph,
-		arg.TeacherID,
-		arg.Header,
-		arg.Paragraph,
-		arg.ID,
-	)
+func (q *Queries) UpdateParagraphOrAndHeader(ctx context.Context, arg UpdateParagraphOrAndHeaderParams) (Paragraph, error) {
+	row := q.db.QueryRow(ctx, updateParagraphOrAndHeader, arg.Header, arg.Paragraph, arg.ID)
 	var i Paragraph
 	err := row.Scan(
 		&i.ID,

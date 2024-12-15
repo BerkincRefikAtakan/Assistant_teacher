@@ -1,16 +1,13 @@
--- name: GetStudents :many
-SELECT id, class_id, name, surname, created_at
-FROM students;
-
--- name: GetStudentByID :one
+-- name: GetStudents :one
 SELECT id, class_id, name, surname, created_at
 FROM students
-WHERE id = $1;
+WHERE name = $1 AND surname = $2 AND class_id = $3;
 
 -- name: GetStudentsByClass :many
 SELECT id, class_id, name, surname, created_at
 FROM students
-WHERE class_id = $1;
+WHERE class_id = $1
+LIMIT $2 OFFSET $3;
 
 -- name: CreateStudent :one
 INSERT INTO students (class_id, name, surname)

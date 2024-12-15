@@ -44,14 +44,20 @@ func (q *Queries) DeleteStudent(ctx context.Context, id int64) error {
 	return err
 }
 
-const getStudentByID = `-- name: GetStudentByID :one
+const getStudents = `-- name: GetStudents :one
 SELECT id, class_id, name, surname, created_at
 FROM students
-WHERE id = $1
+WHERE name = $1 AND surname = $2 AND class_id = $3
 `
 
-func (q *Queries) GetStudentByID(ctx context.Context, id int64) (Student, error) {
-	row := q.db.QueryRow(ctx, getStudentByID, id)
+type GetStudentsParams struct {
+	Name    string `json:"name"`
+	Surname string `json:"surname"`
+	ClassID int64  `json:"class_id"`
+}
+
+func (q *Queries) GetStudents(ctx context.Context, arg GetStudentsParams) (Student, error) {
+	row := q.db.QueryRow(ctx, getStudents, arg.Name, arg.Surname, arg.ClassID)
 	var i Student
 	err := row.Scan(
 		&i.ID,
@@ -63,45 +69,21 @@ func (q *Queries) GetStudentByID(ctx context.Context, id int64) (Student, error)
 	return i, err
 }
 
-const getStudents = `-- name: GetStudents :many
-SELECT id, class_id, name, surname, created_at
-FROM students
-`
-
-func (q *Queries) GetStudents(ctx context.Context) ([]Student, error) {
-	rows, err := q.db.Query(ctx, getStudents)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	items := []Student{}
-	for rows.Next() {
-		var i Student
-		if err := rows.Scan(
-			&i.ID,
-			&i.ClassID,
-			&i.Name,
-			&i.Surname,
-			&i.CreatedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const getStudentsByClass = `-- name: GetStudentsByClass :many
 SELECT id, class_id, name, surname, created_at
 FROM students
 WHERE class_id = $1
+LIMIT $2 OFFSET $3
 `
 
-func (q *Queries) GetStudentsByClass(ctx context.Context, classID int64) ([]Student, error) {
-	rows, err := q.db.Query(ctx, getStudentsByClass, classID)
+type GetStudentsByClassParams struct {
+	ClassID int64 `json:"class_id"`
+	Limit   int32 `json:"limit"`
+	Offset  int32 `json:"offset"`
+}
+
+func (q *Queries) GetStudentsByClass(ctx context.Context, arg GetStudentsByClassParams) ([]Student, error) {
+	rows, err := q.db.Query(ctx, getStudentsByClass, arg.ClassID, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
